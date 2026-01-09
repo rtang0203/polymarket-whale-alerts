@@ -125,7 +125,8 @@ class RTDSClient:
                 data = json.loads(message)
                 await self._handle_message(data)
             except json.JSONDecodeError:
-                logger.warning(f"Failed to parse message: {message[:100]}...")
+                # Non-JSON messages (e.g., subscription confirmations) are expected
+                logger.debug(f"Non-JSON message received: {message[:100]}...")
             except Exception as e:
                 logger.error(f"Error handling message: {e}")
 

@@ -1,6 +1,26 @@
 # Changelog
 
-## [0.1.0] - 2025-01-09
+## [0.1.1] - 2026-01-09
+
+### Fixed
+- **Ctrl+C not stopping scanner** - Tasks now properly cancelled on shutdown instead of waiting for sleep timers
+- **False "NEW WALLET" flags** - When `/trades` API times out, now shows "Trade history unknown (API timeout)" instead of incorrectly claiming 0 trades
+- **"API Trades: 100" for all active wallets** - Now correctly shows "100+" when hitting the API limit
+- **websockets v15 compatibility** - Fixed `AttributeError: 'ClientConnection' has no attribute 'open'`
+- **Startup WARNING about non-JSON message** - Changed to DEBUG level (subscription confirmation is expected)
+
+### Improved
+- **Parallel API calls** - `/trades` and `/leaderboard` now fetched simultaneously, cutting enrichment time in half
+- **Reduced timeout** - API timeout reduced from 30s to 10s for faster failure detection
+- **Added timing logs** - Enrichment now logs duration to help diagnose slow API responses
+
+### Added
+- **`scripts/investigate_wallet.py`** - Utility script to manually investigate wallet data
+- **`test_discord_flags.py`** - 9 new tests for flag and stats display logic (22 total tests)
+
+---
+
+## [0.1.0] - 2026-01-09
 
 ### Added
 
@@ -76,7 +96,7 @@ Initial implementation of the Polymarket Whale Scanner.
 
 ### Short-term (Recommended)
 
-- [ ] Run scanner for 24+ hours to verify stability
+- [ ] **Deploy to DigitalOcean droplet** - Run scanner 24/7 on a cloud server
 - [ ] Monitor logs for any API rate limiting issues
 - [ ] Verify Discord alerts are formatted correctly
 - [ ] Check database is recording trades properly

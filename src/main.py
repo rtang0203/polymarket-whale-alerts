@@ -52,6 +52,7 @@ class WhaleScanner:
             whale_threshold=WHALE_THRESHOLD,
         )
         self._shutdown = False
+        self._tasks = []  # Track tasks for cancellation
 
     async def start(self):
         """Initialize all components and start the scanner."""
@@ -82,12 +83,17 @@ class WhaleScanner:
         )
 
         # Run WebSocket client and resolution tracker concurrently
+        # Track tasks so we can cancel them on shutdown
+        self._tasks = [
+            asyncio.create_task(self.ws_client.connect()),
+            asyncio.create_task(self.run_resolution_tracker()),
+            asyncio.create_task(self.periodic_stats_log()),
+        ]
+
         try:
-            await asyncio.gather(
-                self.ws_client.connect(),
-                self.run_resolution_tracker(),
-                self.periodic_stats_log(),
-            )
+            await asyncio.gather(*self._tasks)
+        except asyncio.CancelledError:
+            logger.info("Tasks cancelled")
         finally:
             await self.cleanup()
 
@@ -214,6 +220,10 @@ class WhaleScanner:
         logger.info(f"Received signal {sig}, initiating shutdown...")
         self._shutdown = True
         self.ws_client.stop()
+        # Cancel all running tasks
+        for task in self._tasks:
+            if not task.done():
+                task.cancel()
 
 
 async def main():

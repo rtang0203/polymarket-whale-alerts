@@ -77,11 +77,15 @@ class DiscordAlerter:
             trade_count = wallet_stats.get("api_trade_count")
 
         # Only flag as NEW WALLET if we have confirmed data (not None)
+        # None means API call failed - don't make claims about trade history
         if trade_count is not None:
             if trade_count == 0:
                 flags.append("NEW WALLET (0 previous trades)")
             elif trade_count < 10:
                 flags.append(f"NEW WALLET ({trade_count} previous trades)")
+        else:
+            # API failed - note this so user knows data is incomplete
+            flags.append("Trade history unknown (API timeout)")
 
         # Check PnL from leaderboard
         pnl = wallet_stats.get("pnl") or wallet_stats.get("leaderboard_pnl")

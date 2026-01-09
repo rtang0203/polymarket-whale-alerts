@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import time
 from typing import Optional
 
 import aiohttp
@@ -26,7 +28,7 @@ class WalletEnricher:
     async def init(self):
         """Initialize the HTTP session."""
         self.session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=30),
+            timeout=aiohttp.ClientTimeout(total=10),  # 10s timeout per request
             headers={"User-Agent": "PolymarketWhaleScanner/1.0"},
         )
 
@@ -53,21 +55,27 @@ class WalletEnricher:
             logger.debug(f"Using cached data for {wallet_address[:10]}...")
             return wallet
 
-        # Fetch fresh data from API
+        # Fetch fresh data from API (parallel calls for speed)
+        start = time.time()
         logger.info(f"Fetching API data for {wallet_address[:10]}...")
         api_data = {}
 
-        # Get trade history count
+        # Run both API calls in parallel
+        trades, leaderboard = await asyncio.gather(
+            self._fetch_trades(wallet_address),
+            self._fetch_leaderboard(wallet_address),
+        )
+
+        total_elapsed = time.time() - start
+        logger.info(f"Enrichment for {wallet_address[:10]}... completed in {total_elapsed:.1f}s")
+
+        # Process trade history count
         # Note: API returns max 100 trades, so 100 means "100+"
-        trades = await self._fetch_trades(wallet_address)
         if trades is None:
             # API call failed - don't set trade_count (leave as unknown)
             api_data["trade_count"] = None
         else:
             api_data["trade_count"] = len(trades)
-
-        # Get leaderboard stats
-        leaderboard = await self._fetch_leaderboard(wallet_address)
         if leaderboard:
             rank = leaderboard.get("rank")
             api_data["leaderboard_rank"] = int(rank) if rank else None
@@ -97,18 +105,26 @@ class WalletEnricher:
         url = f"{DATA_API_BASE}/trades"
         params = {"user": wallet, "limit": 100}
 
+        start = time.time()
         try:
             async with self.session.get(url, params=params) as resp:
+                elapsed = time.time() - start
                 if resp.status == 200:
-                    return await resp.json()
+                    data = await resp.json()
+                    logger.debug(f"/trades for {wallet[:10]}... took {elapsed:.1f}s, got {len(data)} trades")
+                    return data
                 elif resp.status == 429:
-                    logger.warning(f"Rate limited on /trades for {wallet[:10]}...")
+                    logger.warning(f"Rate limited on /trades for {wallet[:10]}... after {elapsed:.1f}s")
                 else:
                     logger.warning(
-                        f"Error fetching trades for {wallet[:10]}...: {resp.status}"
+                        f"Error fetching trades for {wallet[:10]}...: {resp.status} after {elapsed:.1f}s"
                     )
+        except asyncio.TimeoutError:
+            elapsed = time.time() - start
+            logger.warning(f"Timeout fetching trades for {wallet[:10]}... after {elapsed:.1f}s")
         except Exception as e:
-            logger.error(f"Exception fetching trades for {wallet[:10]}...: {e}")
+            elapsed = time.time() - start
+            logger.error(f"Exception fetching trades for {wallet[:10]}... after {elapsed:.1f}s: {e}")
 
         return None
 
@@ -123,20 +139,27 @@ class WalletEnricher:
         url = f"{DATA_API_BASE}/v1/leaderboard"
         params = {"user": wallet}
 
+        start = time.time()
         try:
             async with self.session.get(url, params=params) as resp:
+                elapsed = time.time() - start
                 if resp.status == 200:
                     data = await resp.json()
                     if data and len(data) > 0:
+                        logger.debug(f"/leaderboard for {wallet[:10]}... took {elapsed:.1f}s")
                         return data[0]
                 elif resp.status == 429:
-                    logger.warning(f"Rate limited on /leaderboard for {wallet[:10]}...")
+                    logger.warning(f"Rate limited on /leaderboard for {wallet[:10]}... after {elapsed:.1f}s")
                 else:
                     logger.debug(
-                        f"No leaderboard data for {wallet[:10]}...: {resp.status}"
+                        f"No leaderboard data for {wallet[:10]}...: {resp.status} after {elapsed:.1f}s"
                     )
+        except asyncio.TimeoutError:
+            elapsed = time.time() - start
+            logger.warning(f"Timeout fetching leaderboard for {wallet[:10]}... after {elapsed:.1f}s")
         except Exception as e:
-            logger.error(f"Exception fetching leaderboard for {wallet[:10]}...: {e}")
+            elapsed = time.time() - start
+            logger.error(f"Exception fetching leaderboard for {wallet[:10]}... after {elapsed:.1f}s: {e}")
 
         return None
 

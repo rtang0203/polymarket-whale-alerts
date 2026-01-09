@@ -35,11 +35,12 @@ class TestDiscordFlags:
         flags = alerter._build_flags(stats)
         assert not any("NEW WALLET" in f for f in flags)
 
-    def test_no_new_wallet_flag_when_api_failed(self, alerter):
-        """When trade_count is None (API failed), should NOT flag as NEW WALLET."""
+    def test_api_timeout_flag_when_api_failed(self, alerter):
+        """When trade_count is None (API failed), should flag as unknown."""
         stats = {"trade_count": None, "leaderboard_rank": 100}
         flags = alerter._build_flags(stats)
         assert not any("NEW WALLET" in f for f in flags)
+        assert any("API timeout" in f for f in flags)
 
     def test_no_new_wallet_flag_at_100_trades(self, alerter):
         """Wallet hitting 100 trade limit should NOT be flagged as NEW WALLET."""
