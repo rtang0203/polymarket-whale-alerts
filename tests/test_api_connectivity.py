@@ -35,6 +35,23 @@ class TestRTDSWebSocket:
     """Tests for the RTDS WebSocket connection."""
 
     @pytest.mark.asyncio
+    async def test_rtds_client_get_stats(self):
+        """Test that RTDSClient.get_stats() works without errors."""
+        from src.websocket_client import RTDSClient
+
+        async def noop_handler(trade):
+            pass
+
+        client = RTDSClient(on_whale_trade=noop_handler, whale_threshold=10000)
+
+        # Should work before connection (not connected)
+        stats = client.get_stats()
+        assert "messages_received" in stats
+        assert "whale_trades_detected" in stats
+        assert "connected" in stats
+        assert stats["connected"] is False
+
+    @pytest.mark.asyncio
     async def test_websocket_connects(self):
         """Test that we can establish a WebSocket connection to RTDS."""
         async with websockets.connect(RTDS_URL) as ws:

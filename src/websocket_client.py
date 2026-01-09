@@ -175,9 +175,17 @@ class RTDSClient:
 
     def get_stats(self) -> dict:
         """Get client statistics."""
+        # Check connection state (websockets v15+ uses state.name instead of .open)
+        connected = False
+        if self.ws is not None:
+            try:
+                connected = self.ws.state.name == "OPEN"
+            except AttributeError:
+                connected = False
+
         return {
             "messages_received": self._message_count,
             "whale_trades_detected": self._whale_count,
             "last_data_time": self.last_data_time.isoformat(),
-            "connected": self.ws is not None and self.ws.open,
+            "connected": connected,
         }

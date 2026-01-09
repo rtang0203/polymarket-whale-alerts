@@ -58,8 +58,13 @@ class WalletEnricher:
         api_data = {}
 
         # Get trade history count
+        # Note: API returns max 100 trades, so 100 means "100+"
         trades = await self._fetch_trades(wallet_address)
-        api_data["trade_count"] = len(trades) if trades else 0
+        if trades is None:
+            # API call failed - don't set trade_count (leave as unknown)
+            api_data["trade_count"] = None
+        else:
+            api_data["trade_count"] = len(trades)
 
         # Get leaderboard stats
         leaderboard = await self._fetch_leaderboard(wallet_address)

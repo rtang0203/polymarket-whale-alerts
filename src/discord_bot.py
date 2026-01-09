@@ -71,13 +71,17 @@ class DiscordAlerter:
         flags = []
 
         # Check trade count - fresh/new wallet flags
-        trade_count = wallet_stats.get("trade_count") or wallet_stats.get(
-            "api_trade_count", 0
-        )
-        if trade_count == 0:
-            flags.append("NEW WALLET (0 previous trades)")
-        elif trade_count < 10:
-            flags.append(f"NEW WALLET ({trade_count} previous trades)")
+        # trade_count can be None (API failed), 0 (new wallet), or 1-100 (capped at 100)
+        trade_count = wallet_stats.get("trade_count")
+        if trade_count is None:
+            trade_count = wallet_stats.get("api_trade_count")
+
+        # Only flag as NEW WALLET if we have confirmed data (not None)
+        if trade_count is not None:
+            if trade_count == 0:
+                flags.append("NEW WALLET (0 previous trades)")
+            elif trade_count < 10:
+                flags.append(f"NEW WALLET ({trade_count} previous trades)")
 
         # Check PnL from leaderboard
         pnl = wallet_stats.get("pnl") or wallet_stats.get("leaderboard_pnl")
@@ -178,11 +182,13 @@ class DiscordAlerter:
         if rank:
             stats_parts.append(f"Rank: #{rank}")
 
-        trade_count = wallet_stats.get("trade_count") or wallet_stats.get(
-            "api_trade_count"
-        )
-        if trade_count:
-            stats_parts.append(f"API Trades: {trade_count}")
+        trade_count = wallet_stats.get("trade_count")
+        if trade_count is None:
+            trade_count = wallet_stats.get("api_trade_count")
+        if trade_count is not None and trade_count > 0:
+            # API caps at 100, so 100 means "at least 100"
+            display = "100+" if trade_count >= 100 else str(trade_count)
+            stats_parts.append(f"API Trades: {display}")
 
         realized_pnl = wallet_stats.get("realized_pnl", 0)
         if realized_pnl != 0:
