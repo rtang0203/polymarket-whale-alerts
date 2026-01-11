@@ -54,8 +54,7 @@ Set in `.env` file (copy from `.env.example`):
 - `WHALE_THRESHOLD_USD` - default 10000
 - `RESOLUTION_CHECK_INTERVAL_HOURS` - default 1
 - `DATABASE_PATH` - default polymarket_whales.db
+- `DATA_RETENTION_DAYS` - default 30 (cleanup deletes resolved trades older than this)
 
-## Deployment Notes (TODO)
-- Target: DigitalOcean droplet (Ubuntu)
-- Prefer: systemd service (simpler than Docker for single app)
-- Database: SQLite file should persist in /var/lib/polymarket-scanner/
+
+```

@@ -97,6 +97,7 @@ Initial implementation of the Polymarket Whale Scanner.
 ### Short-term (Recommended)
 
 - [ ] **Deploy to DigitalOcean droplet** - Run scanner 24/7 on a cloud server
+- [ ] fix empty wallet stats issue. if i had to guess, the async enrichment often doesn't finish before the alert is published.
 - [ ] Monitor logs for any API rate limiting issues
 - [ ] Verify Discord alerts are formatted correctly
 - [ ] Check database is recording trades properly

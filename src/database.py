@@ -322,3 +322,63 @@ class Database:
                 (limit,),
             )
             return [dict(row) for row in await cursor.fetchall()]
+
+    async def cleanup_old_trades(self, retention_days: int = 30) -> dict:
+        """
+        Delete resolved trades older than retention_days.
+        Unresolved trades are kept regardless of age.
+        Wallet aggregate stats are preserved.
+
+        Returns dict with cleanup stats.
+        """
+        cutoff = (datetime.now() - timedelta(days=retention_days)).isoformat()
+
+        async with aiosqlite.connect(self.db_path) as db:
+            # Count what we're about to delete
+            cursor = await db.execute(
+                """
+                SELECT COUNT(*) FROM whale_trades
+                WHERE trade_won IS NOT NULL AND timestamp < ?
+            """,
+                (cutoff,),
+            )
+            row = await cursor.fetchone()
+            trades_to_delete = row[0] if row else 0
+
+            if trades_to_delete > 0:
+                # Delete old resolved trades
+                await db.execute(
+                    """
+                    DELETE FROM whale_trades
+                    WHERE trade_won IS NOT NULL AND timestamp < ?
+                """,
+                    (cutoff,),
+                )
+                await db.commit()
+
+                # Vacuum to reclaim space
+                await db.execute("VACUUM")
+
+            # Get current stats
+            cursor = await db.execute("SELECT COUNT(*) FROM whale_trades")
+            row = await cursor.fetchone()
+            remaining_trades = row[0] if row else 0
+
+            cursor = await db.execute(
+                "SELECT COUNT(*) FROM whale_trades WHERE trade_won IS NULL"
+            )
+            row = await cursor.fetchone()
+            unresolved_trades = row[0] if row else 0
+
+            cursor = await db.execute("SELECT COUNT(*) FROM wallets")
+            row = await cursor.fetchone()
+            total_wallets = row[0] if row else 0
+
+        return {
+            "deleted_trades": trades_to_delete,
+            "remaining_trades": remaining_trades,
+            "unresolved_trades": unresolved_trades,
+            "total_wallets": total_wallets,
+            "retention_days": retention_days,
+            "cutoff_date": cutoff,
+        }

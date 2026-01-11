@@ -1,0 +1,11 @@
+[Unit]
+Description=Polymarket Database Cleanup
+After=network.target
+
+[Service]
+Type=oneshot
+User=app
+Group=app
+WorkingDirectory=/opt/polymarket-scanner
+EnvironmentFile=/var/lib/polymarket-scanner/.env
+ExecStart=/opt/polymarket-scanner/venv/bin/python3 scripts/cleanup.py

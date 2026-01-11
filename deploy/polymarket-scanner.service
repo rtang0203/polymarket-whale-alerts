@@ -1,0 +1,19 @@
+[Unit]
+Description=Polymarket Whale Scanner
+After=network.target
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/opt/polymarket-scanner
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/var/lib/polymarket-scanner/.env
+ExecStart=/opt/polymarket-scanner/venv/bin/python3 -m src.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
