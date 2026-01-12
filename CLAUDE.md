@@ -56,5 +56,6 @@ Set in `.env` file (copy from `.env.example`):
 - `DATABASE_PATH` - default polymarket_whales.db
 - `DATA_RETENTION_DAYS` - default 30 (cleanup deletes resolved trades older than this)
 
+## Deployment
 
-```
+See [DEPLOYMENT.md](DEPLOYMENT.md) for DigitalOcean setup instructions.

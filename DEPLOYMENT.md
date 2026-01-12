@@ -35,3 +35,4 @@ systemctl list-timers | grep polymarket
 
 # Manual cleanup
 sudo -u app /opt/polymarket-scanner/venv/bin/python3 scripts/cleanup.py --dry-run
+```
