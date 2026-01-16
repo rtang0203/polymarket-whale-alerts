@@ -6,8 +6,8 @@ Unresolved trades are always kept (needed for P&L calculation).
 Wallet aggregate stats (wins, losses, realized_pnl) are preserved.
 
 Usage:
-    python3 scripts/cleanup.py                    # Use default 30 days
-    python3 scripts/cleanup.py --days 60          # Keep 60 days
+    python3 scripts/cleanup.py                    # Use default 7 days
+    python3 scripts/cleanup.py --days 30          # Keep 30 days
     python3 scripts/cleanup.py --dry-run          # Preview without deleting
 
 Recommended: Run daily via cron or systemd timer.
@@ -28,7 +28,7 @@ from src.database import Database
 load_dotenv()
 
 DATABASE_PATH = os.getenv("DATABASE_PATH", "polymarket_whales.db")
-DEFAULT_RETENTION_DAYS = int(os.getenv("DATA_RETENTION_DAYS", 30))
+DEFAULT_RETENTION_DAYS = int(os.getenv("DATA_RETENTION_DAYS", 7))
 
 
 async def run_cleanup(retention_days: int, dry_run: bool = False):
