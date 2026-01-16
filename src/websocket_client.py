@@ -156,6 +156,11 @@ class RTDSClient:
 
     async def _process_trade(self, trade: dict):
         """Process a single trade and check if it's a whale trade."""
+        # Filter out 15-min crypto "Up or Down" markets (unlikely insider activity)
+        title = trade.get("title", "")
+        if "Up or Down" in title:
+            return
+
         size = trade.get("size", 0)
         price = trade.get("price", 0)
 
