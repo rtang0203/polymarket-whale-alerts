@@ -294,8 +294,10 @@ from pathlib import Path
 # Configuration
 LOOKBACK_MINUTES = 15        # How far back to look for new articles
 TRADE_WINDOW_HOURS = 48      # How far back to look for trades before article
-NEWS_DB_PATH = Path("/path/to/news-scraper/articles.db")  # Configure this
-SCANNER_DB_PATH = Path("/path/to/polymarket-scanner/polymarket_whales.db")
+
+# Default paths - override via environment variables
+# Local: NEWS_DB_PATH=/Users/randytang/Documents/projects/news-scraper/articles.db
+# Droplet: NEWS_DB_PATH=/var/lib/news-scraper/articles.db
 
 class CorrelationChecker:
     """
@@ -347,7 +349,7 @@ class CorrelationChecker:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, source, url, title, scraped_at
+            SELECT id, source, url, title, published_at, scraped_at
             FROM articles
             WHERE scraped_at > ?
             ORDER BY scraped_at DESC
@@ -606,9 +608,15 @@ Add to `.env`:
 # Existing settings...
 
 # Correlation checker
-CORRELATION_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
-NEWS_DB_PATH=/home/user/news-scraper/articles.db
-SCANNER_DB_PATH=/home/user/polymarket-scanner/polymarket_whales.db
+CORRELATION_WEBHOOK_URL=https://discord.com/api/webhooks/1462329955059765359/xO-J2f95F9y1soXrf5fg07eFdICfzh6F6GatFx9F2gLy5eYowhsrqJnu6-iinQsO2Gex
+
+# Local development paths
+NEWS_DB_PATH=/Users/randytang/Documents/projects/news-scraper/articles.db
+SCANNER_DB_PATH=/Users/randytang/Documents/projects/polymarket-whale-alerts/polymarket_whales.db
+
+# DigitalOcean droplet paths (uncomment for production)
+# NEWS_DB_PATH=/var/lib/news-scraper/articles.db
+# SCANNER_DB_PATH=/var/lib/polymarket-scanner/polymarket_whales.db
 ```
 
 ## Deployment
@@ -618,19 +626,23 @@ SCANNER_DB_PATH=/home/user/polymarket-scanner/polymarket_whales.db
 Add to crontab on DigitalOcean droplet:
 
 ```bash
-# Run news scraper every 10 minutes
-*/10 * * * * cd /home/user/news-scraper && ./venv/bin/python3 news_scraper/scraper.py >> /var/log/news-scraper.log 2>&1
+# Run news scraper every 10 minutes (already configured)
+*/10 * * * * cd /opt/news-scraper && ./venv/bin/python3 news_scraper/scraper.py >> /var/log/news-scraper.log 2>&1
 
 # Run correlation checker 1 minute after scraper (give it time to complete)
-1,11,21,31,41,51 * * * * cd /home/user/polymarket-scanner && ./venv/bin/python3 check_correlations.py >> /var/log/correlation.log 2>&1
+1,11,21,31,41,51 * * * * cd /opt/polymarket-scanner && ./venv/bin/python3 check_correlations.py >> /var/log/correlation.log 2>&1
 ```
+
+Database paths on droplet:
+- News DB: `/var/lib/news-scraper/articles.db`
+- Scanner DB: `/var/lib/polymarket-scanner/polymarket_whales.db`
 
 ### Database Migration
 
 Run once to add the correlation_matches table:
 
 ```bash
-cd /home/user/polymarket-scanner
+cd /opt/polymarket-scanner
 ./venv/bin/python3 -c "
 import asyncio
 from src.database import Database

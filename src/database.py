@@ -103,6 +103,51 @@ class Database:
                     ON whale_trades(trade_won) WHERE trade_won IS NULL;
                 CREATE INDEX IF NOT EXISTS idx_whale_trades_condition
                     ON whale_trades(condition_id);
+                CREATE INDEX IF NOT EXISTS idx_whale_trades_timestamp
+                    ON whale_trades(timestamp);
+
+                -- Correlation matches (trades that precede related news)
+                CREATE TABLE IF NOT EXISTS correlation_matches (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    -- Trade reference
+                    trade_id INTEGER NOT NULL,
+                    trade_timestamp TEXT NOT NULL,
+                    wallet_address TEXT NOT NULL,
+                    market_title TEXT NOT NULL,
+                    trade_value REAL NOT NULL,
+
+                    -- Article reference (denormalized - cross-DB)
+                    article_url TEXT NOT NULL,
+                    article_title TEXT NOT NULL,
+                    article_source TEXT NOT NULL,
+                    article_scraped_at TEXT NOT NULL,
+
+                    -- Match metadata
+                    matched_keywords TEXT NOT NULL,
+                    time_delta_seconds INTEGER NOT NULL,
+                    confidence TEXT NOT NULL,
+                    market_type TEXT,
+
+                    -- Tracking
+                    created_at TEXT NOT NULL,
+                    discord_alerted BOOLEAN DEFAULT FALSE,
+                    notes TEXT,
+
+                    -- Prevent duplicate matches
+                    UNIQUE(trade_id, article_url),
+                    FOREIGN KEY (trade_id) REFERENCES whale_trades(id),
+                    FOREIGN KEY (wallet_address) REFERENCES wallets(address)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_correlation_wallet
+                    ON correlation_matches(wallet_address);
+                CREATE INDEX IF NOT EXISTS idx_correlation_time_delta
+                    ON correlation_matches(time_delta_seconds);
+                CREATE INDEX IF NOT EXISTS idx_correlation_created
+                    ON correlation_matches(created_at);
+                CREATE INDEX IF NOT EXISTS idx_correlation_confidence
+                    ON correlation_matches(confidence);
             """
             )
             await db.commit()
