@@ -10,3 +10,13 @@ Branch: `auto-improve/2026-06-28`
 - **Files:** `tests/test_keywords.py` (created)
 - **Gate:** Baseline 22 passed → Post-change 81 passed (59 new tests, all green). Command: `venv/bin/python -m pytest -q`
 - **Commit:** `1b91c80`
+
+---
+
+### refactor: remove unused run_periodic method from ResolutionTracker
+
+- **What:** Deleted the `run_periodic()` async method (19 lines) from `src/resolution.py`. This method looped calling `check_resolutions()` on a timed interval but was never invoked anywhere in the codebase.
+- **Why:** Dead code — grep of `src/` confirmed `run_periodic` appeared only at its definition. The `stop()` method (which sets `self._running = False`) and `fetch_market_raw()` are preserved; `stop()` is used in `src/main.py` for graceful shutdown.
+- **Files:** `src/resolution.py`
+- **Gate:** Baseline 81 passed → Post-change 81 passed. Command: `venv/bin/python -m pytest -q`
+- **Commit:** `7f9c5fb`
