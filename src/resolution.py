@@ -142,25 +142,6 @@ class ResolutionTracker:
 
         return None
 
-    async def run_periodic(self, interval_hours: float = 1.0):
-        """
-        Run resolution checks periodically.
-
-        Args:
-            interval_hours: Hours between checks
-        """
-        self._running = True
-        interval_seconds = interval_hours * 3600
-
-        while self._running:
-            try:
-                resolved = await self.check_resolutions()
-                logger.info(f"Resolution check complete. Updated {resolved} trades.")
-            except Exception as e:
-                logger.error(f"Resolution check error: {e}")
-
-            await asyncio.sleep(interval_seconds)
-
     def stop(self):
         """Stop the periodic resolution checker."""
         self._running = False
