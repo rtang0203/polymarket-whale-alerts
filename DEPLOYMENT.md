@@ -99,6 +99,21 @@ NEWS_DB_PATH=/var/lib/news-scraper/articles.db
 SCANNER_DB_PATH=/var/lib/polymarket-scanner/polymarket_whales.db
 ```
 
+### Step 2b: Symlink .env File
+
+The correlation checker uses `load_dotenv()` which looks for `.env` in the current working directory. The main scanner works differently - it runs via systemd which loads env vars directly from `EnvironmentFile=`.
+
+Create a symlink so the correlation checker can find the config:
+
+```bash
+ln -s /var/lib/polymarket-scanner/.env /opt/polymarket-scanner/.env
+```
+
+**Why this is needed:**
+- Main scanner (`src/main.py`): Runs via systemd with `EnvironmentFile=/var/lib/polymarket-scanner/.env`
+- Correlation checker (`check_correlations.py`): Runs via cron, uses `load_dotenv()` from current directory
+- The symlink ensures both can access the same config file
+
 ### Step 3: Test Manually
 
 ```bash
